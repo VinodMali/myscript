@@ -90,7 +90,7 @@ done
 echo -n "Enter database Username : "
 read user                                       # user variable stores the username
 echo -n "Enter password for database user $dbuser : "
-read pass                                       # pass variable stores the password
+read -s pass                                       # pass variable stores the password
 mysql -u root -e "CREATE USER '$user'@'%' IDENTIFIED BY '$pass';"
 mysql -u root -e "grant all privileges on $db.* to $user@localhost identified by '$pass' with grant option;"
 mysql -u root -e "flush privileges;"
