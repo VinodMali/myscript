@@ -1,0 +1,122 @@
+#!/bin/bash
+# Author : Vinod Mali (vinodmali2007@gmail.com)
+
+# Check if php is present if not it will install the php
+php -version > /dev/null 2>&1
+if [ $? == 0 ]
+then
+echo "php is installed"
+else
+echo "php is not installed"
+yum install -y php*
+fi
+
+#Check if mysql is preset, if not it will install the mysql
+mysql -V > /dev/null 2>&1
+if [ $? == 0 ]
+then
+echo "MySQL is installed"
+else
+echo "MySQL is not installed"
+yum install -y mysql*
+fi
+
+#Check if nginx is present, if not it will install the nginx
+if [ -f /etc/init.d/nginx ]
+then
+echo "nginx is installed"
+else
+echo "nginx is not installed"
+yum install -y nginx
+fi
+
+# Enter the doamin name which you want to configure with nginx
+echo -n "Enter the domain name : "
+read domain                                             # domain stores the domain name
+echo "127.0.0.1 $domain" >> /etc/hosts                  # It will add the domain in local host
+echo -n "Enter the document root for $domain : "        # Enter the document root for the domain
+read doc_root                                           # doc_root stores the document root
+if [ ! -d $doc_root ]                                   # check if doc root is exists or not, if not it wil create it
+then
+mkdir -p $doc_root
+fi
+
+# Configure the nginx configuration  file for domain
+echo "
+server {
+    listen       80;
+    server_name  $domain;
+
+ location / {
+        root   $doc_root;
+        index  index.php;
+    }
+
+ location ~ \.php$ {
+        root           $doc_root;
+        fastcgi_pass   127.0.0.1:9000;
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME  $doc_root\$fastcgi_script_name;
+        include        fastcgi_params;
+    }
+}" > /etc/nginx/conf.d/$domain.conf
+# Download the wordpress
+wget -P $doc_root http://wordpress.org/latest.zip       # Download wordpress zip file into document root
+cd $doc_root                                            # Enter into document root
+unzip latest.zip > /dev/null                            # unzip the download wordpress zip file
+cd wordpress                                    # Enter into wordpress directory. Which is created when we extract zip file
+cp wp-config-sample.php wp-config.php           # Crate wp-config.php file using the template
+mv * ../                                        # Move all files into document root
+tput clear                                      # It clears the screen
+
+# Create database, database user and database user password.
+echo -n "Enter database name : "
+read db                                         # db is variable stores the database
+
+# Check if database is already exists, if not create the database.
+y="0"
+while [ $y -eq 0 ]
+do
+if [ ! -d /var/lib/mysql/$db ]
+then
+mysql -u root -e "create database $db"
+y=1
+else
+echo -n "Database already exists. Enter another database name : "
+read db
+fi
+done
+
+echo -n "Enter database Username : "
+read user                                       # user variable stores the username
+echo -n "Enter password for database user $dbuser : "
+read pass                                       # pass variable stores the password
+mysql -u root -e "CREATE USER '$user'@'%' IDENTIFIED BY '$pass';"
+mysql -u root -e "grant all privileges on $db.* to $user@localhost identified by '$pass' with grant option;"
+mysql -u root -e "flush privileges;"
+
+tput clear
+
+# d variable stores the default database details in wp-config.php
+d=`grep "DB_NAME" $doc_root/wp-config.php`
+
+# Here replacing the database with original database
+replace "$d" "define('DB_NAME', '$db');" -- $doc_root/wp-config.php
+
+# u variable stores the default user details in wp-config.php
+u=`grep "DB_USER" $doc_root/wp-config.php`
+
+# Here replacing the dbuser with original dbuser
+replace "$u" "define('DB_USER', '$user');" -- $doc_root/wp-config.php
+
+# p variable stores the default password details in wp-config.php
+p=`grep "DB_PASSWORD" $doc_root/wp-config.php`
+
+# Replacing the default password with original password
+replace "$p" "define('DB_PASSWORD', '$pass');" -- $doc_root/wp-config.php
+
+#Restart the nginx
+/etc/init.d/nginx restart > /dev/null
+tput clear
+echo "Please browse the below url to install wordpress"
+echo "$domain"
