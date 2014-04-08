@@ -1,0 +1,290 @@
+#!/bin/bash
+# Author : Vinod Mali (vinodmali2007@gmail.com)
+
+# Check if php is present if not it will install the php
+
+domain()
+{
+# Enter the doamin name which you want to configure with nginx
+echo -n "Enter the domain name : "
+read domain                                             # domain stores the domain name
+echo "127.0.0.1 $domain" >> /etc/hosts                  # It will add the domain in local host
+echo -n "Enter the document root for $domain : "        # Enter the document root for the domain
+read doc_root                                           # doc_root stores the document root
+if [ ! -d $doc_root ]                                   # check if doc root is exists or not, if not it wil create it
+then
+mkdir -p $doc_root
+fi
+}
+
+# It executes on Ubuntu OS
+ubuntu_conf()
+{
+dpkg --get-selections | grep -w install | grep php > /dev/null 2>&1
+if [ $? -eq 0 ]
+then
+echo "php is installed"
+else
+echo "php is not installed"
+echo "Please Wait... Installing the php"
+sudo apt-get install -y php5 php5-cli php5-common php5-fpm php5-mysql > /dev/null 2>&1
+
+# Check if package is installed successfully.
+if [ $? -eq 0 ]
+then
+echo "Installed the PHP"
+/etc/init.d/php5-fpm restart > /dev/null
+else
+echo "Error During installation of PHP."
+exit 0
+fi
+fi
+
+#Check if mysql is preset, if not it will install the mysql
+dpkg --get-selections | grep -w install | grep mysql-server  > /dev/null 2>&1
+if [ $? -eq 0 ]
+then
+echo "MySQL is installed"
+else
+echo "MySQL is not installed"
+echo "Plase Wait... Installing the MySQL"
+sudo apt-get install mysql-server mysql-common mysql-client > /dev/null
+
+# Check if package is installed successfully.
+if [ $? -eq 0 ]
+then
+echo "Installed the MySQL"
+else
+echo " Error During installation of MySQL."
+exit 0
+fi
+fi
+
+#Check if nginx is present, if not it will install the nginx
+dpkg  --get-selections | grep -w install | grep nginx  > /dev/null 2>&1
+if [ $? -eq 0 ]
+then
+echo "nginx is installed"
+else
+echo "nginx is not installed"
+echo "Please wait... Installing the nginx"
+sudo apt-get install -y nginx > /dev/null
+
+# Check if nginx is installed successfully.
+if [ $? -eq 0 ]
+then
+echo "Installed the Nginx"
+else
+echo "Error During installation of Nginx."
+exit 0
+fi
+fi
+
+# Here calling the doamin function the body of it is defined at starting.
+domain
+
+# Configure the nginx configuration  file for domain
+echo "
+server {
+    listen       127.0.0.1:80;
+    server_name  $domain;
+
+ location / {
+        root   $doc_root;
+        index  index.php;
+    }
+
+ location ~ \.php$ {
+        root           $doc_root;
+        fastcgi_pass   127.0.0.1:9000;
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME  $doc_root\$fastcgi_script_name;
+        include        fastcgi_params;
+    }
+}" > /etc/nginx/sites-enabled/$domain
+}
+
+
+# It executes on CentOS
+centos_conf()
+{
+yum list installed | grep php > /dev/null 2>&1
+if [ $? -eq 0 ]
+then
+echo "php is installed"
+else
+echo "php is not installed"
+echo "Please wait... Installing the php"
+yum install -y php php-fpm php-mysql php-common php-cli > /dev/null
+
+# Check if package is installed successfully.
+if [ $? -eq 0 ]
+then
+echo "Installed the PHP"
+/etc/init.d/php-fpm restart
+else
+echo "Error During installation of PHP."
+exit 0
+fi
+fi
+
+#Check if mysql is preset, if not it will install the mysql
+yum list installed | grep mysql > /dev/null 2>&1
+if [ $? -eq 0 ]
+then
+echo "MySQL is installed"
+else
+echo "MySQL is not installed"
+echo "Please wait... Installing the MySQL"
+yum install -y mysql*
+
+if [ $? -eq 0 ]
+then
+echo "Installed the MySQL"
+else
+echo "Error During installation of MySQL."
+exit 0
+fi
+
+fi
+
+#Check if nginx is present, if not it will install the nginx
+yum list installed | grep nginx
+if [ $? -eq 0 ]
+then
+echo "nginx is installed"
+else
+echo "nginx is not installed"
+echo "Please wait... Installing the nginx"
+yum install -y nginx
+if [ $? -eq 0 ]
+then
+echo "Installed the Nginx"
+else
+echo "Error During installation of Nginx."
+exit 0
+fi
+
+fi
+
+domain
+# Configure the nginx configuration  file for domain
+echo "
+server {
+    listen       80;
+    server_name  $domain;
+
+ location / {
+        root   $doc_root;
+        index  index.php;
+    }
+
+ location ~ \.php$ {
+        root           $doc_root;
+        fastcgi_pass   127.0.0.1:9000;
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME  $doc_root\$fastcgi_script_name;
+        include        fastcgi_params;
+    }
+}" > /etc/nginx/conf.d/$domain.conf
+
+}
+
+# Download the wordpress
+
+download_wp()
+{
+wget -P $doc_root http://wordpress.org/latest.zip       # Download wordpress zip file into document root
+cd $doc_root                                            # Enter into document root
+unzip latest.zip > /dev/null                            # unzip the download wordpress zip file
+cd wordpress                                    # Enter into wordpress directory. Which is created when we extract zip file
+cp wp-config-sample.php wp-config.php           # Crate wp-config.php file using the template
+mv * ../                                        # Move all files into document root
+tput clear                                      # It clears the screen
+}
+
+database()
+{
+# Create database, database user and database user password.
+echo -n "Enter database name : "
+read db                                         # db is variable stores the database
+
+# Check if database is already exists, if not create the database.
+y="0"
+while [ $y -eq 0 ]
+do
+if [ ! -d /var/lib/mysql/$db ]
+then
+mysql -u root -e "create database $db"
+y=1
+else
+echo -n "Database already exists. Enter another database name : "
+read db
+fi
+done
+
+echo -n "Enter database Username : "
+read user                                       # user variable stores the username
+echo -n "Enter password for database user $dbuser : "
+stty -echo
+read pass                                    # pass variable stores the password
+stty echo
+mysql -u root -e "CREATE USER '$user'@'%' IDENTIFIED BY '$pass';"
+mysql -u root -e "grant all privileges on $db.* to $user@localhost identified by '$pass' with grant option;"
+mysql -u root -e "flush privileges;"
+}
+tput clear
+
+wp_config()
+{
+# d variable stores the default database details in wp-config.php
+d=`grep "DB_NAME" $doc_root/wp-config.php`
+
+# Here replacing the database with original database
+replace "$d" "define('DB_NAME', '$db');" -- $doc_root/wp-config.php > /dev/null
+
+# u variable stores the default user details in wp-config.php
+u=`grep "DB_USER" $doc_root/wp-config.php`
+
+# Here replacing the dbuser with original dbuser
+replace "$u" "define('DB_USER', '$user');" -- $doc_root/wp-config.php  > /dev/null
+
+# p variable stores the default password details in wp-config.php
+p=`grep "DB_PASSWORD" $doc_root/wp-config.php`
+
+# Replacing the default password with original password
+replace "$p" "define('DB_PASSWORD', '$pass');" -- $doc_root/wp-config.php > /dev/null
+
+#Restart the nginx
+/etc/init.d/nginx restart > /dev/null
+tput clear
+
+echo "Please browse the below url to install wordpress"
+echo "$domain"
+}
+
+os=`cat /etc/issue | awk {'print $1'} | sed '/^$/d' | head -1`
+
+case "$os" in
+
+Ubuntu )
+ubuntu_conf
+download_wp
+database
+wp_config
+break
+;;
+CentOS )
+centos_conf
+download_wp
+database
+wp_config
+break
+;;
+* )
+echo "This script works on only Ubuntu and CentOS!!!"
+break
+;;
+esac
+
+
