@@ -27,7 +27,7 @@ echo "php is installed"
 else
 echo "php is not installed"
 echo "Please Wait... Installing the php"
-sudo apt-get install -y php5 php5-cli php5-common php5-fpm php5-mysql > /dev/null 2>&1
+sudo apt-get install -y php5 php5-cli php5-common php5-fpm php5-mysql
 
 # Check if package is installed successfully.
 if [ $? -eq 0 ]
@@ -48,7 +48,7 @@ echo "MySQL is installed"
 else
 echo "MySQL is not installed"
 echo "Plase Wait... Installing the MySQL"
-sudo apt-get install mysql-server mysql-common mysql-client > /dev/null
+sudo apt-get install -y mysql-server mysql-common mysql-client
 
 # Check if package is installed successfully.
 if [ $? -eq 0 ]
