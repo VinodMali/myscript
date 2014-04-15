@@ -194,9 +194,9 @@ server {
 
 download_wp()
 {
-wget -P $doc_root http://wordpress.org/latest.zip       # Download wordpress zip file into document root
+wget -P $doc_root http://wordpress.org/latest.tar.gz    # Download wordpress zip file into document root
 cd $doc_root                                            # Enter into document root
-unzip latest.zip > /dev/null                            # unzip the download wordpress zip file
+tar -xf latest.tar.gz > /dev/null                          # unzip the download wordpress zip file
 cd wordpress                                    # Enter into wordpress directory. Which is created when we extract zip file
 cp wp-config-sample.php wp-config.php           # Crate wp-config.php file using the template
 mv * ../                                        # Move all files into document root
