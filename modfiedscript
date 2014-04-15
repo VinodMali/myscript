@@ -6,6 +6,7 @@
 domain()
 {
 # Enter the doamin name which you want to configure with nginx
+clear
 echo -n "Enter the domain name : "
 read domain                                                                  # domain stores the domain name
 echo "127.0.0.1 $domain" >> /etc/hosts                                       # It will add the domain in local host
