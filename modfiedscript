@@ -8,11 +8,11 @@ domain()
 # Enter the doamin name which you want to configure with nginx
 clear
 echo -n "Enter the domain name : "
-read domain                                                                  # domain stores the domain name
-echo "127.0.0.1 $domain" >> /etc/hosts                                       # It will add the domain in local host
-echo -n "Enter the absolute path for the document root of $domain : "        # Enter the document root for the domain
-read doc_root                                           # doc_root stores the document root
-if [ ! -d $doc_root ]                                   # check if doc root is exists or not, if not it wil create it
+read domain # domain stores the domain name
+echo "127.0.0.1 $domain" >> /etc/hosts # It will add the domain in local host
+echo -n "Enter the absolute path for the document root of $domain : " # Enter the document root for the domain
+read doc_root # doc_root stores the document root
+if [ ! -d $doc_root ] # check if doc root is exists or not, if not it wil create it
 then
 mkdir -p $doc_root
 fi
@@ -42,7 +42,7 @@ fi
 fi
 
 #Check if mysql is preset, if not it will install the mysql
-dpkg --get-selections | grep -w install | grep mysql-server  > /dev/null 2>&1
+dpkg --get-selections | grep -w install | grep mysql-server > /dev/null 2>&1
 if [ $? -eq 0 ]
 then
 echo "MySQL is installed"
@@ -62,7 +62,7 @@ fi
 fi
 
 #Check if nginx is present, if not it will install the nginx
-dpkg  --get-selections | grep -w install | grep nginx  > /dev/null 2>&1
+dpkg --get-selections | grep -w install | grep nginx > /dev/null 2>&1
 if [ $? -eq 0 ]
 then
 echo "nginx is installed"
@@ -84,23 +84,23 @@ fi
 # Here calling the doamin function the body of it is defined at starting.
 domain
 
-# Configure the nginx configuration  file for domain
+# Configure the nginx configuration file for domain
 echo "
 server {
-    listen       127.0.0.1:80;
-    server_name  $domain;
+    listen 127.0.0.1:80;
+    server_name $domain;
 
  location / {
-        root   $doc_root;
-        index  index.php;
+        root $doc_root;
+        index index.php;
     }
 
  location ~ \.php$ {
-        root           $doc_root;
-        fastcgi_pass   127.0.0.1:9000;
-        fastcgi_index  index.php;
-        fastcgi_param  SCRIPT_FILENAME  $doc_root\$fastcgi_script_name;
-        include        fastcgi_params;
+        root $doc_root;
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $doc_root\$fastcgi_script_name;
+        include fastcgi_params;
     }
 }" > /etc/nginx/sites-enabled/$domain
 }
@@ -169,23 +169,23 @@ fi
 fi
 
 domain
-# Configure the nginx configuration  file for domain
+# Configure the nginx configuration file for domain
 echo "
 server {
-    listen       80;
-    server_name  $domain;
+    listen 80;
+    server_name $domain;
 
  location / {
-        root   $doc_root;
-        index  index.php;
+        root $doc_root;
+        index index.php;
     }
 
  location ~ \.php$ {
-        root           $doc_root;
-        fastcgi_pass   127.0.0.1:9000;
-        fastcgi_index  index.php;
-        fastcgi_param  SCRIPT_FILENAME  $doc_root\$fastcgi_script_name;
-        include        fastcgi_params;
+        root $doc_root;
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $doc_root\$fastcgi_script_name;
+        include fastcgi_params;
     }
 }" > /etc/nginx/conf.d/$domain.conf
 
@@ -195,20 +195,34 @@ server {
 
 download_wp()
 {
-wget -P $doc_root http://wordpress.org/latest.tar.gz    # Download wordpress zip file into document root
-cd $doc_root                                            # Enter into document root
-tar -xf latest.tar.gz > /dev/null                          # unzip the download wordpress zip file
-cd wordpress                                    # Enter into wordpress directory. Which is created when we extract zip file
-cp wp-config-sample.php wp-config.php           # Crate wp-config.php file using the template
-mv * ../                                        # Move all files into document root
-tput clear                                      # It clears the screen
+wget -P $doc_root http://wordpress.org/latest.tar.gz # Download wordpress zip file into document root
+cd $doc_root # Enter into document root
+tar -xf latest.tar.gz > /dev/null # unzip the download wordpress zip file
+cd wordpress # Enter into wordpress directory. Which is created when we extract zip file
+cp wp-config-sample.php wp-config.php # Crate wp-config.php file using the template
+mv * ../ # Move all files into document root
+tput clear # It clears the screen
 }
 
 database()
 {
 # Create database, database user and database user password.
-echo -n "Enter database name : "
-read db                                         # db is variable stores the database
+p="0"
+while [ $p -eq 0 ]
+do
+echo -n "Enter the passord of mysql user root : "
+stty -echo
+read rootpass
+stty echo
+echo -n "\nRetype the passord of mysql user root : "
+stty -echo
+read rootpassc
+stty echo
+
+if [ "$rootpass" = "$rootpassc" ];
+then
+echo -n "\nEnter database name : "
+read db # db is variable stores the database
 
 # Check if database is already exists, if not create the database.
 y="0"
@@ -216,7 +230,7 @@ while [ $y -eq 0 ]
 do
 if [ ! -d /var/lib/mysql/$db ]
 then
-mysql -u root -e "create database $db"
+mysql -u root -p$rootpass -e "create database $db"
 y=1
 else
 echo -n "Database already exists. Enter another database name : "
@@ -225,14 +239,22 @@ fi
 done
 
 echo -n "Enter database Username : "
-read user                                       # user variable stores the username
+read user # user variable stores the username
 echo -n "Enter password for database user $dbuser : "
 stty -echo
-read pass                                    # pass variable stores the password
+read pass # pass variable stores the password
 stty echo
-mysql -u root -e "CREATE USER '$user'@'%' IDENTIFIED BY '$pass';"
-mysql -u root -e "grant all privileges on $db.* to $user@localhost identified by '$pass' with grant option;"
-mysql -u root -e "flush privileges;"
+mysql -u root -p$rootpass -e "CREATE USER '$user'@'%' IDENTIFIED BY '$pass';"
+mysql -u root -p$rootpass -e "grant all privileges on $db.* to $user@localhost identified by '$pass' with grant option;"
+mysql -u root -p$rootpass -e "flush privileges;"
+p=1
+else
+clear
+echo "Incorrect password of mysql user root."
+echo "enter the correct password of mysql user root"
+echo $rootpass
+fi
+done
 }
 tput clear
 
@@ -248,7 +270,7 @@ replace "$d" "define('DB_NAME', '$db');" -- $doc_root/wp-config.php > /dev/null
 u=`grep "DB_USER" $doc_root/wp-config.php`
 
 # Here replacing the dbuser with original dbuser
-replace "$u" "define('DB_USER', '$user');" -- $doc_root/wp-config.php  > /dev/null
+replace "$u" "define('DB_USER', '$user');" -- $doc_root/wp-config.php > /dev/null
 
 # p variable stores the default password details in wp-config.php
 p=`grep "DB_PASSWORD" $doc_root/wp-config.php`
@@ -288,5 +310,3 @@ echo "This script works on only Ubuntu and CentOS!!!"
 break
 ;;
 esac
-
-
