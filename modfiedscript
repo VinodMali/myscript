@@ -252,7 +252,7 @@ else
 clear
 echo "Incorrect password of mysql user root."
 echo "enter the correct password of mysql user root"
-echo $rootpass
+
 fi
 done
 }
