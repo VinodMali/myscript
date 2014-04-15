@@ -7,9 +7,9 @@ domain()
 {
 # Enter the doamin name which you want to configure with nginx
 echo -n "Enter the domain name : "
-read domain                                             # domain stores the domain name
-echo "127.0.0.1 $domain" >> /etc/hosts                  # It will add the domain in local host
-echo -n "Enter the document root for $domain : "        # Enter the document root for the domain
+read domain                                                                  # domain stores the domain name
+echo "127.0.0.1 $domain" >> /etc/hosts                                       # It will add the domain in local host
+echo -n "Enter the absolute path for the document root of $domain : "        # Enter the document root for the domain
 read doc_root                                           # doc_root stores the document root
 if [ ! -d $doc_root ]                                   # check if doc root is exists or not, if not it wil create it
 then
