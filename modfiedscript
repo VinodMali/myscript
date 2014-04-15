@@ -296,17 +296,15 @@ ubuntu_conf
 download_wp
 database
 wp_config
-break
 ;;
 CentOS )
 centos_conf
 download_wp
 database
 wp_config
-break
 ;;
 * )
 echo "This script works on only Ubuntu and CentOS!!!"
-break
+exit 0
 ;;
 esac
