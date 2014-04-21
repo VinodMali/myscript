@@ -1,0 +1,35 @@
+#!/bin/bash
+echo -n "Enter host : "
+read host
+echo -n "Enter ftp username : "
+read ftpuser
+echo -n "Enter password for ftp user $ftpuser : "
+read -s ftppass
+echo "\n"
+ftp -n $host <<data
+quote USER $ftpuser
+quote PASS $ftppass
+ls
+quit
+data
+
+y="0"
+while [ $y -eq 0 ]
+do
+echo -n "Enter the filename which you want to download : "
+read file
+ftp -n $host <<data
+quote USER $ftpuser
+quote PASS $ftppass
+get $file
+quit
+data
+echo "Downloaded the file $file successfully !!"
+echo -n "Do you wish to download another file. Press y/n : "
+read task
+if [ "$task" == "n" ]
+then
+y="1"
+fi
+done
+exit 0
